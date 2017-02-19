@@ -1,31 +1,32 @@
-
 <!doctype html>
-<html lang="en" ng-app='NarrowItDownApp'>
-  <head>
-    <title>Narrow Down Your Menu Choice</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="styles/bootstrap.min.css">
-    <link rel="stylesheet" href="styles/styles.css">
-  </head>
-<body>
-   <div class="container" ng-controller='NarrowItDownController as items'>
+<html lang="en">
+<head>
+  <title>Narrow Down Your Menu Choice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="angular.min.js"></script>
+  <script src="app.js"></script>
+  <link rel="stylesheet" href="styles/bootstrap.min.css">
+  <link rel="stylesheet" href="styles/styles.css">
+</head>
+
+<body ng-app="NarrowItDownApp">
+
+  <div class="container" ng-controller="NarrowItDownController as narr">
     <h1>Narrow Down Your Chinese Menu Choice</h1>
 
     <div class="form-group">
-      <input type="text"ng-model="items.searchTerm" placeholder="search term" class="form-control">
+      <input type="text" ng-model="narr.searchText" placeholder="search menu items" class="form-control"></input>
     </div>
     <div class="form-group narrow-button">
-      <button class="btn btn-primary" ng-click='items.search()'>Narrow It Down For Me!</button>
+      <button class="btn btn-primary" ng-click="narr.getMatchedMenuItems(narr.searchText);">Narrow It Down For Me!</button>
     </div>
-
-    <!-- found-items should be implemented as a component -->
-
-      <br />
-      <br />
-    <found-items found="items.found" on-remove="items.removeItem(index)"></found-items>
-    <div class="error" ng-if="items.nothingFound" >Nothing found</div>
+    <div class="result" ng-if="narr.found">
+      <found-items
+        found="narr.found"
+        on-remove="narr.removeItem(index)">   <!--index is a placeholder label! actual value is passed in from the directive (foundItems.html)-->
+      </found-items>
+    </div>
   </div>
-  <script src="angular.min.js"></script>
-  <script src="app.js"></script>
+
 </body>
 </html>
