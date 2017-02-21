@@ -1,81 +1,78 @@
 (function() {
-'use strict';
 
-angular.module('NarrowItDownApp', [])
-.controller('NarrowItDownController', NarrowItDownController)
-.service('MenuSearchService', MenuSearchService)
-.directive('foundItems', FoundItemsDirective)
-.constant('ApiBasePath', "https://davids-restaurant.herokuapp.com");  // /menu_items.json
+  'use strict';
+  angular.module('NarrowItDownApp', [])
+  .controller('NarrowItDownController', NarrowItDownController)
+  .service('MenuSearchService', MenuSearchService)
+  .directive('foundItems', FoundItems);
 
-function FoundItemsDirective() {
-  var ddo = {
-    templateUrl: 'foundItems.html',
-    scope: {
-      found: '<',
-      onRemove: '&'
-    },
-    controller: NarrowItDownController,
-    controllerAs: 'narr',
-    bindToController: true
-  };
 
-  return ddo;
-}
+  FoundItems.$inject = [];
+  function FoundItems() {
+    var ddo = {
+      templateUrl:'founditem.html',
+      restrict : "AE",
+      scope: {
+        items: '<',
+        onRemove: '&',
+      },
+    };
+    return ddo;
+  }
 
-NarrowItDownController.$inject = ['MenuSearchService'];
-function NarrowItDownController(MenuSearchService) {
-  var narro = this;
-  narro.searchText = "";
-  //leave narro.found undefined until first search creates it
+  NarrowItDownController.$inject = ['$scope', 'MenuSearchService'];
+  function NarrowItDownController($scope, MenuSearchService) {
+    var self = this;
+    self.found = [];
+    self.errMsg = "";
+    self.search = function() {
+      self.found = [];
+      if ($scope.search_term === undefined || $scope.search_term.trim().length == 0) {
+        self.errMsg = "Nothing Found";
+        return;
+      }
+      var promise = MenuSearchService.getMatchedMenuItems($scope.search_term);
+      promise.then(function(result) {
+        self.found = MenuSearchService.getFoundItems();
+        if (self.found.length == 0) {
+          self.errMsg = "Nothing Found";
+        } else {
+          self.errMsg = "";
+        }
+      });
+    };
 
-  narro.getMatchedMenuItems = function (searchText) {
-    if (searchText === "") {
-      narro.found = [];
-      return;
+    self.removeItem = function(index) {
+      self.found.splice(index, 1);
     }
-
-    var promise = MenuSearchService.getMatchedMenuItems(searchText);
-    promise.then(function (result) {
-      narro.found = result;
-    })
-    .catch(function (error) {
-      console.log(error);
-    })
   }
 
-  narro.removeItem = function (itemIndex) {
-    MenuSearchService.removeItem(itemIndex)
-  }
-}
 
-MenuSearchService.$inject = ['$http', 'ApiBasePath'];
-function MenuSearchService($http, ApiBasePath) {
-  var service = this;
+  MenuSearchService.$inject = ['$http', '$q'];
+  function MenuSearchService($http, $q) {
+    var service = this;
+    var foundItems = [];
 
-  //list of found items
-  var foundItems = [];
-
-  service.getMatchedMenuItems = function(searchTerm) {
-    return $http({
-      method: "GET",
-      url: (ApiBasePath + "/menu_items.json")
-    })
-    .then(function (response) {
-        // process response and only keep items that match
-        foundItems = [];  //wipe clean and start over on each search!
-        var items = response.data.menu_items;
-        for (var i = 0; i < items.length; i++) {
-          if (items[i].description.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
-            foundItems.push(items[i]);
+    service.getMatchedMenuItems = function(searchTerm) {
+      var deferred = $q.defer();
+      $http({
+        method: 'GET',
+        url: 'https://davids-restaurant.herokuapp.com/menu_items.json',
+      }).then(function (result) {
+        var loaded = result.data.menu_items;
+        for (var i = 0; i < loaded.length; i++) {
+          if (loaded[i].description.includes(searchTerm)) {
+            foundItems.push(loaded[i]);
           }
         }
-        return foundItems;
-    });
+        deferred.resolve(result);
+      });
+
+      return deferred.promise;
+    };
+
+    service.getFoundItems = function() {
+      return foundItems;
+    }
   }
-
-  service.removeItem = function (itemIndex) {
-    foundItems.splice(itemIndex, 1);
-  };
-}
-
 })();
